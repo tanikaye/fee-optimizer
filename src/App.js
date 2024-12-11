@@ -1,86 +1,131 @@
-import React, { useState, useEffect } from 'react';
-import { getGasFees } from './utils/etherscanApi';
-import './App.css'; 
+import React, { useState, useEffect } from "react";
+import { getGasFees } from "./utils/etherscanApi";
+import "./App.css";
 
 function App() {
-    const [fees, setFees] = useState(null);
-    const [transactionAmount, setTransactionAmount] = useState('');
-    const [selectedFeeType, setSelectedFeeType] = useState('');
-    const [calculatedFee, setCalculatedFee] = useState(null);
+  const [fees, setFees] = useState(null);
+  const [amount, setAmount] = useState("");
+  const [feeType, setFeeType] = useState("average");
+  const [calculatedFee, setCalculatedFee] = useState(null);
+  const [alertThreshold, setAlertThreshold] = useState("");
+  const [alertType, setAlertType] = useState("low");
+  const [alertTriggered, setAlertTriggered] = useState(false);
 
-    useEffect(() => {
-        const fetchFees = async () => {
-            const data = await getGasFees();
-            setFees(data);
-        };
-        fetchFees();
-    }, []);
+  useEffect(() => {
+    // Function to fetch gas fees
+    const fetchFees = async () => {
+      const data = await getGasFees();
+      setFees(data);
 
-    const handleCalculate = () => {
-        if (!transactionAmount || !selectedFeeType || !fees) {
-            alert('Please enter a transaction amount and select a fee type.');
-            return;
+      // Check if the alert should be triggered
+      if (alertThreshold && alertType) {
+        const currentFee =
+          alertType === "low"
+            ? data.SafeGasPrice
+            : alertType === "average"
+            ? data.ProposeGasPrice
+            : data.FastGasPrice;
+
+        if (currentFee < alertThreshold && !alertTriggered) {
+          alert(`Gas fee for ${alertType.toUpperCase()} is now below ${alertThreshold} Gwei!`);
+          setAlertTriggered(true); // Prevent multiple alerts
         }
-
-        const gasPriceGwei = {
-            low: fees.SafeGasPrice,
-            average: fees.ProposeGasPrice,
-            high: fees.FastGasPrice,
-        }[selectedFeeType];
-
-        const gasPriceEth = gasPriceGwei / 1e9; // Convert Gwei to ETH
-        const estimatedFee = gasPriceEth * 21000 * parseFloat(transactionAmount); // Assuming 21,000 gas units
-        setCalculatedFee(estimatedFee.toFixed(8)); // Limit to 8 decimal places
+      }
     };
 
-    return (
-        <div>
-            <header>
-                <h1>Fee Optimizer</h1>
-                <nav>
-                    <a href="#">Track Fees</a> | <a href="#">Optimize</a> | <a href="#">About</a>
-                </nav>
-            </header>
-            <main>
-                <h2>Optimize Your Transaction Fees</h2>
-                {fees ? (
-                    <div>
-                        <p>Low Fee: {fees.SafeGasPrice} Gwei</p>
-                        <p>Average Fee: {fees.ProposeGasPrice} Gwei</p>
-                        <p>High Fee: {fees.FastGasPrice} Gwei</p>
-                        <div>
-                            <input
-                                type="number"
-                                placeholder="Transaction Amount (ETH)"
-                                value={transactionAmount}
-                                onChange={(e) => setTransactionAmount(e.target.value)}
-                            />
-                            <select
-                                value={selectedFeeType}
-                                onChange={(e) => setSelectedFeeType(e.target.value)}
-                            >
-                                <option value="">Select Fee Type</option>
-                                <option value="low">Low</option>
-                                <option value="average">Average</option>
-                                <option value="high">High</option>
-                            </select>
-                            <button onClick={handleCalculate}>Calculate Fee</button>
-                        </div>
-                        {calculatedFee && (
-                            <p>
-                                Estimated Gas Fee: <strong>{calculatedFee} ETH</strong>
-                            </p>
-                        )}
-                    </div>
-                ) : (
-                    <p>Loading fee data...</p>
-                )}
-            </main>
-            <footer>
-                <p>© 2024 Fee Optimizer. All Rights Reserved.</p>
-            </footer>
-        </div>
-    );
+    // Initial fetch and periodic refresh every 30 seconds
+    fetchFees();
+    const interval = setInterval(fetchFees, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval); // Clean up the interval on component unmount
+  }, [alertThreshold, alertType, alertTriggered]);
+
+  const calculateFee = () => {
+    if (!fees || !amount) {
+      alert("Please enter a valid transaction amount.");
+      return;
+    }
+
+    const gasPriceGwei =
+      feeType === "low"
+        ? fees.SafeGasPrice
+        : feeType === "average"
+        ? fees.ProposeGasPrice
+        : fees.FastGasPrice;
+
+    const gasPriceEth = gasPriceGwei / 1e9; // Convert Gwei to ETH
+    const estimatedGasFee = gasPriceEth * amount; // Gas fee in ETH
+    setCalculatedFee(estimatedGasFee.toFixed(8));
+  };
+
+  return (
+    <div>
+      <header>
+        <h1>Fee Optimizer</h1>
+        <nav>
+          <a href="#">Track Fees</a> | <a href="#">Optimize</a> | <a href="#">About</a>
+        </nav>
+      </header>
+      <main>
+        <h2>Optimize Your Transaction Fees</h2>
+        {fees ? (
+          <div>
+            <p>Low Fee: {fees.SafeGasPrice} Gwei</p>
+            <p>Average Fee: {fees.ProposeGasPrice} Gwei</p>
+            <p>High Fee: {fees.FastGasPrice} Gwei</p>
+            <div>
+              <h3>Calculate Gas Fee</h3>
+              <input
+                type="number"
+                placeholder="Transaction Amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+              <select value={feeType} onChange={(e) => setFeeType(e.target.value)}>
+                <option value="low">Low</option>
+                <option value="average">Average</option>
+                <option value="high">High</option>
+              </select>
+              <button onClick={calculateFee}>Calculate Fee</button>
+              {calculatedFee && <p>Estimated Gas Fee: {calculatedFee} ETH</p>}
+            </div>
+            <div>
+              <h3>Set Fee Alert</h3>
+              <input
+                type="number"
+                placeholder="Set Fee Threshold (Gwei)"
+                value={alertThreshold}
+                onChange={(e) => setAlertThreshold(e.target.value)}
+                style={{ width: '170px' }}
+              />
+              <select value={alertType} onChange={(e) => setAlertType(e.target.value)}>
+                <option value="low">Low</option>
+                <option value="average">Average</option>
+                <option value="high">High</option>
+              </select>
+              <button
+                onClick={() => {
+                  if (alertThreshold) {
+                    setAlertTriggered(false); // Reset alert trigger
+                    alert(`Alert set for ${alertType.toUpperCase()} fees below ${alertThreshold} Gwei.`);
+                  } else {
+                    alert("Please set a valid fee threshold.");
+                  }
+                }}
+              >
+                Set Alert
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p>Loading fee data...</p>
+        )}
+      </main>
+      <footer>
+        <p>© 2024 Fee Optimizer. All Rights Reserved.</p>
+      </footer>
+    </div>
+  );
 }
 
 export default App;
