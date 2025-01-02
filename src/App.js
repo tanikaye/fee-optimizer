@@ -1,8 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { getGasFees } from "./utils/etherscanApi";
 import "./App.css";
-import { db } from "./firebaseConfig"; // Your Firebase config
+import { db } from "./firebaseConfig";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { messaging } from "./firebaseConfig"; // Import messaging
+import { getToken, onMessage } from "firebase/messaging";
+
+const requestNotificationPermission = async () => {
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      const token = await getToken(messaging, {
+        vapidKey: "BNfSZB0krbJ0csxW8C2cxdP1BGqV1kT7ltxqK_VYcD3sYnGQniXDGI6RqtLBph-Qm4IdMQaG1KYdVEKM9ZAuHVE", // Replace with your actual VAPID key
+      });
+      console.log("FCM Token:", token);
+      alert("Notification permission granted. Token received!");
+      // Save this token to Firestore or send it to your server for later use
+    } else {
+      console.error("Notification permission denied");
+    }
+  } catch (error) {
+    console.error("Error requesting notification permission:", error);
+  }
+};
 
 function App() {
   const [fees, setFees] = useState(null);
@@ -13,15 +33,15 @@ function App() {
   const [alertThreshold, setAlertThreshold] = useState("");
   const [alertType, setAlertType] = useState("low");
   const [alertTriggered, setAlertTriggered] = useState(false);
-  const [alertUnit, setAlertUnit] = useState("gwei"); // Gwei or USD
+  const [alertUnit, setAlertUnit] = useState("gwei");
 
   useEffect(() => {
+    // Fetch Gas Fees
     const fetchFees = async () => {
       const data = await getGasFees();
       setFees(data);
-      setEthPrice(2000); // Simulating ETH price; replace with live fetching
+      setEthPrice(2000); // Simulated ETH price
 
-      // Check if the alert should be triggered
       if (alertThreshold && alertType) {
         const currentFee =
           alertType === "low"
@@ -43,7 +63,7 @@ function App() {
               alertUnit === "gwei" ? `${alertThreshold} Gwei` : `$${alertThreshold}`
             }!`
           );
-          setAlertTriggered(true); // Prevent multiple alerts
+          setAlertTriggered(true);
         }
       }
     };
@@ -52,6 +72,16 @@ function App() {
     const interval = setInterval(fetchFees, 30000); // Refresh every 30 seconds
     return () => clearInterval(interval);
   }, [alertThreshold, alertType, alertTriggered, alertUnit, ethPrice]);
+
+  useEffect(() => {
+    // Listen for incoming notifications
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log("Message received in foreground: ", payload);
+      alert(`Notification received: ${payload.notification.title}`);
+    });
+
+    return unsubscribe; // Cleanup the listener on unmount
+  }, []);
 
   const calculateFee = () => {
     if (!fees || !amount) {
@@ -66,10 +96,10 @@ function App() {
         ? fees.ProposeGasPrice
         : fees.FastGasPrice;
 
-    const gasPriceEth = gasPriceGwei / 1e9; // Convert Gwei to ETH
-    const estimatedGasLimit = 200000; // Estimated gas limit for token swaps
-    const estimatedGasFeeEth = gasPriceEth * estimatedGasLimit; // Gas fee in ETH
-    const estimatedGasFeeUsd = estimatedGasFeeEth * ethPrice; // Gas fee in USD
+    const gasPriceEth = gasPriceGwei / 1e9;
+    const estimatedGasLimit = 200000;
+    const estimatedGasFeeEth = gasPriceEth * estimatedGasLimit;
+    const estimatedGasFeeUsd = estimatedGasFeeEth * ethPrice;
 
     setCalculatedFee({
       eth: estimatedGasFeeEth.toFixed(8),
@@ -87,10 +117,10 @@ function App() {
     try {
       await addDoc(collection(db, "alerts"), {
         createdAt: Timestamp.now(),
-        feeType: alertType, // 'low', 'average', or 'high'
+        feeType: alertType,
         threshold: parseFloat(alertThreshold),
-        thresholdType: alertUnit === "gwei" ? "Gwei" : "USD", // 'Gwei' or 'USD'
-        userId: "testUser123", // Replace with a dynamic user ID if needed
+        thresholdType: alertUnit === "gwei" ? "Gwei" : "USD",
+        userId: "testUser123",
       });
       alert("Alert successfully saved to Firestore!");
     } catch (error) {
@@ -109,6 +139,10 @@ function App() {
       </header>
       <main>
         <h2>Optimize Your Transaction Fees</h2>
+        <div>
+          <h3>Enable Notifications</h3>
+          <button onClick={requestNotificationPermission}>Enable Notifications</button>
+        </div>
         {fees && ethPrice ? (
           <div>
             <p>

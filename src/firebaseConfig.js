@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore"; // Import Firestore
 import { getAnalytics } from "firebase/analytics";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -22,3 +23,6 @@ export const db = getFirestore(app);
 
 // Initialize Analytics
 const analytics = getAnalytics(app);
+
+// Initialize Messaging and export it
+export const messaging = getMessaging(app);
