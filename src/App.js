@@ -35,6 +35,7 @@ function App() {
   const [alertType, setAlertType] = useState("low");
   const [alertTriggered, setAlertTriggered] = useState(false);
   const [alertUnit, setAlertUnit] = useState("gwei");
+  const [alertSet, setAlertSet] = useState(false);
 
   useEffect(() => {
     const fetchFees = async () => {
@@ -42,7 +43,7 @@ function App() {
       setFees(data);
       setEthPrice(2000); // Simulated ETH price
 
-      if (alertThreshold && alertType) {
+      if (alertSet && alertThreshold && alertType) {
         const currentFee =
           alertType === "low"
             ? data.SafeGasPrice
@@ -85,7 +86,7 @@ function App() {
     };
 
     fetchFees();
-    const interval = setInterval(fetchFees, 30000); // Refresh every 30 seconds
+    const interval = setInterval(fetchFees, 7000); // Refresh every 3 seconds
     return () => clearInterval(interval);
   }, [alertThreshold, alertType, alertTriggered, alertUnit, ethPrice]);
 
@@ -150,6 +151,8 @@ function App() {
         userId: "testUser123",
       });
       alert("Alert successfully saved to Firestore!");
+      setAlertSet(true);
+      setAlertTriggered(false);
     } catch (error) {
       console.error("Error saving alert:", error);
       alert("Failed to save the alert.");
