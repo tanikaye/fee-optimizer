@@ -13,6 +13,7 @@ const requestNotificationPermission = async () => {
       const token = await getToken(messaging, {
         vapidKey: "BNfSZB0krbJ0csxW8C2cxdP1BGqV1kT7ltxqK_VYcD3sYnGQniXDGI6RqtLBph-Qm4IdMQaG1KYdVEKM9ZAuHVE", // Replace with your actual VAPID key
       });
+      console.log("Notification permission granted.");
       console.log("FCM Token:", token);
       alert("Notification permission granted. Token received!");
       // Save this token to Firestore or send it to your server for later use
@@ -36,7 +37,6 @@ function App() {
   const [alertUnit, setAlertUnit] = useState("gwei");
 
   useEffect(() => {
-    // Fetch Gas Fees
     const fetchFees = async () => {
       const data = await getGasFees();
       setFees(data);
@@ -54,16 +54,32 @@ function App() {
 
         const thresholdMet =
           alertUnit === "gwei"
-            ? currentFee < alertThreshold
-            : feeInUsd < alertThreshold;
+          ? Number(currentFee) < Number(alertThreshold)
+          : Number(feeInUsd) < Number(alertThreshold);
+
+        console.log("Current Fee:", currentFee, alertUnit === "gwei" ? "Gwei" : "USD");
+        console.log("Threshold Met:", thresholdMet);
+        console.log("Alert Triggered State:", alertTriggered);
+        console.log("Threshold number:", alertThreshold);
+
+        console.log("Current Fee:", currentFee, "Type:", typeof currentFee);
+        console.log("Alert Threshold:", alertThreshold, "Type:", typeof alertThreshold);
+        console.log("Threshold Met Logic:", currentFee, "<", alertThreshold);
+
+
 
         if (thresholdMet && !alertTriggered) {
+          console.log("Notification logic triggered!");
           alert(
             `Gas fee for ${alertType.toUpperCase()} is now below ${
               alertUnit === "gwei" ? `${alertThreshold} Gwei` : `$${alertThreshold}`
             }!`
           );
           setAlertTriggered(true);
+        } else {
+          console.log(
+            `Notification not triggered. Threshold Met: ${thresholdMet}, Alert Triggered: ${alertTriggered}`
+          );
         }
       }
     };
@@ -74,7 +90,6 @@ function App() {
   }, [alertThreshold, alertType, alertTriggered, alertUnit, ethPrice]);
 
   useEffect(() => {
-    // Listen for incoming notifications
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log("Message received in foreground: ", payload);
       alert(`Notification received: ${payload.notification.title}`);
@@ -101,6 +116,12 @@ function App() {
     const estimatedGasFeeEth = gasPriceEth * estimatedGasLimit;
     const estimatedGasFeeUsd = estimatedGasFeeEth * ethPrice;
 
+    console.log("Calculated Gas Fee:", {
+      eth: estimatedGasFeeEth,
+      gwei: gasPriceGwei,
+      usd: estimatedGasFeeUsd,
+    });
+
     setCalculatedFee({
       eth: estimatedGasFeeEth.toFixed(8),
       gwei: (gasPriceGwei * estimatedGasLimit).toLocaleString(),
@@ -115,6 +136,12 @@ function App() {
     }
 
     try {
+      console.log("Saving alert to Firestore:", {
+        threshold: alertThreshold,
+        type: alertType,
+        unit: alertUnit,
+      });
+
       await addDoc(collection(db, "alerts"), {
         createdAt: Timestamp.now(),
         feeType: alertType,
