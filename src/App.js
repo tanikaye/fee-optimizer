@@ -33,6 +33,7 @@ function App() {
   const [calculatedFee, setCalculatedFee] = useState(null);
   const [ethPrice, setEthPrice] = useState(null);
   const [alertThreshold, setAlertThreshold] = useState("");
+  const [activeAlertThreshold, setActiveAlertThreshold] = useState("");
   const [alertType, setAlertType] = useState("low");
   const [alertTriggered, setAlertTriggered] = useState(false);
   const [alertUnit, setAlertUnit] = useState("gwei");
@@ -44,7 +45,7 @@ function App() {
       setFees(data);
       setEthPrice(2000); // Simulated ETH price
 
-      if (alertSet && alertThreshold && alertType) {
+      if (alertSet && activeAlertThreshold && alertType) {
         const currentFee =
           alertType === "low"
             ? data.SafeGasPrice
@@ -56,32 +57,16 @@ function App() {
 
         const thresholdMet =
           alertUnit === "gwei"
-          ? Number(currentFee) < Number(alertThreshold)
-          : Number(feeInUsd) < Number(alertThreshold);
-
-        console.log("Current Fee:", currentFee, alertUnit === "gwei" ? "Gwei" : "USD");
-        console.log("Threshold Met:", thresholdMet);
-        console.log("Alert Triggered State:", alertTriggered);
-        console.log("Threshold number:", alertThreshold);
-
-        console.log("Current Fee:", currentFee, "Type:", typeof currentFee);
-        console.log("Alert Threshold:", alertThreshold, "Type:", typeof alertThreshold);
-        console.log("Threshold Met Logic:", currentFee, "<", alertThreshold);
-
-
+            ? Number(currentFee) < Number(activeAlertThreshold)
+            : Number(feeInUsd) < Number(activeAlertThreshold);
 
         if (thresholdMet && !alertTriggered) {
-          console.log("Notification logic triggered!");
           alert(
             `Gas fee for ${alertType.toUpperCase()} is now below ${
-              alertUnit === "gwei" ? `${alertThreshold} Gwei` : `$${alertThreshold}`
+              alertUnit === "gwei" ? `${activeAlertThreshold} Gwei` : `$${activeAlertThreshold}`
             }!`
           );
-          setAlertTriggered(true);
-        } else {
-          console.log(
-            `Notification not triggered. Threshold Met: ${thresholdMet}, Alert Triggered: ${alertTriggered}`
-          );
+          setAlertTriggered(true); // Prevent repeated alerts
         }
       }
     };
@@ -89,7 +74,9 @@ function App() {
     fetchFees();
     const interval = setInterval(fetchFees, 7000); // Refresh every 7 seconds
     return () => clearInterval(interval);
-  }, [alertThreshold, alertType, alertTriggered, alertUnit, ethPrice]);
+  }, [activeAlertThreshold, alertType, alertTriggered, alertUnit, ethPrice, alertSet]);
+
+
 
   useEffect(() => {
     const unsubscribe = onMessage(messaging, (payload) => {
@@ -136,8 +123,6 @@ function App() {
     }
 
     try {
-      console.log("Checking current gas fee before saving alert...");
-
       const currentFee =
         alertType === "low"
           ? fees?.SafeGasPrice
@@ -152,23 +137,17 @@ function App() {
           ? Number(currentFee) < Number(alertThreshold)
           : Number(feeInUsd) < Number(alertThreshold);
 
-      // If the threshold is already met, show a notification and return early
+      // Notify if the threshold is already met
       if (thresholdMet) {
         alert(
           `Gas fee for ${alertType.toUpperCase()} is already below ${
             alertUnit === "gwei" ? `${alertThreshold} Gwei` : `$${alertThreshold}`
-          }. No alert was saved.`
+          }. No alert was set.`
         );
-        return; // Do not save the alert to Firestore
+        return; // Do not save the alert
       }
 
-      // Otherwise, save the alert to Firestore
-      console.log("Saving alert to Firestore:", {
-        threshold: alertThreshold,
-        type: alertType,
-        unit: alertUnit,
-      });
-
+      // Save the alert to Firestore
       await addDoc(collection(db, "alerts"), {
         createdAt: Timestamp.now(),
         feeType: alertType,
@@ -177,14 +156,17 @@ function App() {
         userId: "testUser123",
       });
 
-      alert("Alert successfully saved to Firestore!");
-      setAlertSet(true);
-      setAlertTriggered(false); // Reset for future notifications
+      alert("Alert successfully saved!");
+      setAlertSet(true); // Activate alert monitoring
+      setAlertTriggered(false); // Reset alert trigger
+      setActiveAlertThreshold(alertThreshold); // Update active threshold
     } catch (error) {
       console.error("Error saving alert:", error);
       alert("Failed to save the alert.");
     }
   };
+
+
 
 
   return (
