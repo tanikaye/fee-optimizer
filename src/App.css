@@ -1,17 +1,26 @@
 /* General Page Styles */
-body {
+html, body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
   background-color: #f4f4f4;
   color: #333;
+  height: 100%; /* Ensure the full viewport is used */
 }
 
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Make sure the app takes up the full viewport height */
+}
+
+/* Header */
 header {
   background-color: #007acc;
   color: white;
   padding: 10px 0;
   text-align: center;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 header h1 {
@@ -42,15 +51,16 @@ main {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  box-sizing: border-box; /* Include padding in height calculation */
 }
 
-/* Footer Styles */
+/* Footer */
 footer {
   background-color: #333;
   color: white;
   text-align: center;
   padding: 10px 0;
-  position: relative; /* Change fixed to relative for better responsiveness */
+  position: relative; /* Ensure footer remains part of the flow */
   width: 100%;
   bottom: 0;
 }
@@ -75,25 +85,7 @@ button:hover {
   background-color: #0056b3;
 }
 
-/* Table Styles */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-table th,
-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: center;
-}
-
-table th {
-  background-color: #f2f2f2;
-}
-
-/* About Tooltip */
+/* Tooltip */
 .about-container {
   position: relative;
   display: inline-block;
@@ -131,25 +123,6 @@ table th {
 }
 
 /* Responsive Styles */
-@media (max-width: 1024px) {
-  main {
-    padding: 10px;
-    min-height: calc(100vh - 150px); /* Adjust for smaller screens */
-  }
-
-  header h1 {
-    font-size: 1.5em; /* Smaller header text */
-  }
-
-  input {
-    width: 90%; /* Full-width inputs on smaller screens */
-  }
-
-  button {
-    width: auto; /* Keep button size consistent */
-  }
-}
-
 @media (max-width: 768px) {
   header nav ul li {
     display: block; /* Stack nav items vertically */
@@ -157,7 +130,7 @@ table th {
   }
 
   main {
-    text-align: center;
+    padding: 10px; /* Adjust padding for smaller screens */
   }
 
   .about-tooltip {
@@ -170,16 +143,11 @@ table th {
     padding: 10px;
   }
 
-  footer {
-    font-size: 0.8em; /* Smaller footer text */
-  }
-
   main {
-    padding: 5px;
+    padding: 5px; /* Smallest padding for smaller devices */
   }
 
-  input,
-  button {
+  input, button {
     width: 100%; /* Full-width for small screens */
     margin-bottom: 10px;
   }
