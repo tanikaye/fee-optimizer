@@ -52,6 +52,34 @@ main {
   justify-content: center;
   align-items: center;
   box-sizing: border-box; /* Include padding in height calculation */
+  max-width: 1200px; /* Constrain width for readability */
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  main {
+    padding: 40px; /* Increase padding for larger screens */
+    font-size: 1.2em; /* Scale font size */
+  }
+
+  button,
+  input {
+    font-size: 0.7em; /* Make input and button text larger */
+    padding: 10px 15px; /* Adjust button padding */
+  }
+}
+
+@media (min-width: 2000px) {
+  main {
+    padding: 40px; /* Increase padding for larger screens */
+    font-size: 1.8em; /* Scale font size */
+  }
+
+  button,
+  input {
+    font-size: 0.5em; /* Make input and button text larger */
+    padding: 10px 15px; /* Adjust button padding */
+  }
 }
 
 /* Footer */
@@ -69,6 +97,7 @@ footer {
 input {
   margin: 0 5px;
   padding: 5px;
+  width: 300px; /* Wider inputs for larger screens */
 }
 
 button {
