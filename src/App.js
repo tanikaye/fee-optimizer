@@ -9,6 +9,7 @@ import { getToken, onMessage } from "firebase/messaging";
 const requestNotificationPermission = async () => {
   try {
     const permission = await Notification.requestPermission();
+    console.log("Notification permission:", Notification.permission); // Log the permission status
     if (permission === "granted") {
       const token = await getToken(messaging, {
         vapidKey: "BNfSZB0krbJ0csxW8C2cxdP1BGqV1kT7ltxqK_VYcD3sYnGQniXDGI6RqtLBph-Qm4IdMQaG1KYdVEKM9ZAuHVE", // Replace with your actual VAPID key
@@ -86,16 +87,14 @@ function App() {
     };
 
     fetchFees();
-    const interval = setInterval(fetchFees, 7000); // Refresh every 3 seconds
+    const interval = setInterval(fetchFees, 7000); // Refresh every 7 seconds
     return () => clearInterval(interval);
   }, [alertThreshold, alertType, alertTriggered, alertUnit, ethPrice]);
 
   useEffect(() => {
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log("Message received in foreground: ", payload);
-      alert(`Notification received: ${payload.notification.title}`);
     });
-
     return unsubscribe; // Cleanup the listener on unmount
   }, []);
 
@@ -137,6 +136,33 @@ function App() {
     }
 
     try {
+      console.log("Checking current gas fee before saving alert...");
+
+      const currentFee =
+        alertType === "low"
+          ? fees?.SafeGasPrice
+          : alertType === "average"
+          ? fees?.ProposeGasPrice
+          : fees?.FastGasPrice;
+
+      const feeInUsd = (currentFee / 1e9) * ethPrice;
+
+      const thresholdMet =
+        alertUnit === "gwei"
+          ? Number(currentFee) < Number(alertThreshold)
+          : Number(feeInUsd) < Number(alertThreshold);
+
+      // If the threshold is already met, show a notification and return early
+      if (thresholdMet) {
+        alert(
+          `Gas fee for ${alertType.toUpperCase()} is already below ${
+            alertUnit === "gwei" ? `${alertThreshold} Gwei` : `$${alertThreshold}`
+          }. No alert was saved.`
+        );
+        return; // Do not save the alert to Firestore
+      }
+
+      // Otherwise, save the alert to Firestore
       console.log("Saving alert to Firestore:", {
         threshold: alertThreshold,
         type: alertType,
@@ -150,21 +176,32 @@ function App() {
         thresholdType: alertUnit === "gwei" ? "Gwei" : "USD",
         userId: "testUser123",
       });
+
       alert("Alert successfully saved to Firestore!");
       setAlertSet(true);
-      setAlertTriggered(false);
+      setAlertTriggered(false); // Reset for future notifications
     } catch (error) {
       console.error("Error saving alert:", error);
       alert("Failed to save the alert.");
     }
   };
 
+
   return (
     <div>
       <header>
         <h1>Fee Optimizer</h1>
         <nav>
-          <a href="#">Track Fees</a> | <a href="#">Optimize</a> | <a href="#">About</a>
+          <div className="about-container">
+            <a href="#" className="about-link">About</a>
+            <div className="about-tooltip">
+              <p>
+                Fee Optimizer helps users track Ethereum gas fees in real time, calculate transaction costs,
+                and set alerts for when fees drop below a desired threshold.
+                Stay ahead of the market and optimize your transactions effortlessly.
+              </p>
+            </div>
+          </div>
         </nav>
       </header>
       <main>
