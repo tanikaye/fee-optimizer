@@ -157,14 +157,16 @@ function App() {
       });
 
       alert("Alert successfully saved!");
+      setActiveAlertThreshold(alertThreshold); // Update active threshold here
       setAlertSet(true); // Activate alert monitoring
       setAlertTriggered(false); // Reset alert trigger
-      setActiveAlertThreshold(alertThreshold); // Update active threshold
     } catch (error) {
       console.error("Error saving alert:", error);
       alert("Failed to save the alert.");
     }
   };
+
+
 
 
 
