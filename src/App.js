@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getGasFees } from "./utils/etherscanApi";
+import { fetchEthPrice } from "./utils/coinGeckoApi";
 import "./App.css";
 import { db } from "./firebaseConfig";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
@@ -39,11 +40,30 @@ function App() {
   const [alertUnit, setAlertUnit] = useState("gwei");
   const [alertSet, setAlertSet] = useState(false);
 
+  // Fetch and update ETH price
+  useEffect(() => {
+    const updateEthPrice = async () => {
+      const price = await fetchEthPrice(); // Fetch ETH price
+      setEthPrice(price); // Set ETH price in state
+      console.log("checking real ethereum price: ", price, ethPrice);
+
+    };
+
+    updateEthPrice();
+
+    // Refresh ETH price periodically
+    const interval = setInterval(updateEthPrice, 15000); // Update every 15 seconds
+    return () => clearInterval(interval); // Cleanup
+  }, []);
+
+  console.log("checking ethPrice: ", ethPrice);
+
+
+  // Fetch gas fees and monitor alerts
   useEffect(() => {
     const fetchFees = async () => {
       const data = await getGasFees();
       setFees(data);
-      setEthPrice(3000); // Simulated ETH price
 
       if (alertSet && activeAlertThreshold && alertType) {
         const currentFee =
