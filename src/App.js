@@ -43,7 +43,7 @@ function App() {
     const fetchFees = async () => {
       const data = await getGasFees();
       setFees(data);
-      setEthPrice(2000); // Simulated ETH price
+      setEthPrice(3000); // Simulated ETH price
 
       if (alertSet && activeAlertThreshold && alertType) {
         const currentFee =
@@ -174,13 +174,13 @@ function App() {
   return (
     <div>
       <header>
-        <h1>Fee Optimizer</h1>
+        <h1>Nivio</h1>
         <nav>
           <div className="about-container">
             <a href="#" className="about-link">About</a>
             <div className="about-tooltip">
               <p>
-                Fee Optimizer helps users track Ethereum gas fees in real time, calculate transaction costs,
+                Nivio helps users track Ethereum gas fees in real time, calculate transaction costs,
                 and set alerts for when fees drop below a desired threshold.
                 Stay ahead of the market and optimize your transactions effortlessly.
               </p>
@@ -261,7 +261,7 @@ function App() {
         )}
       </main>
       <footer>
-        <p>© 2024 Fee Optimizer. All Rights Reserved.</p>
+        <p>© 2024 Nivio. All Rights Reserved.</p>
       </footer>
     </div>
   );
