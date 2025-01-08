@@ -69,7 +69,7 @@ main {
   }
 }
 
-@media (min-width: 2000px) {
+@media (min-width: 00px) {
   main {
     padding: 40px; /* Increase padding for larger screens */
     font-size: 1.8em; /* Scale font size */
@@ -185,3 +185,71 @@ button:hover {
     padding: 10px; /* Make buttons larger for touch devices */
   }
 }
+
+
+/* Updated Tooltip Container */
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* Updated Tooltip Text */
+.tooltip {
+  visibility: hidden;
+  width: 380px; /* More compact */
+  background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black */
+  color: #fff;
+  text-align: center; /* Center-align the text */
+  padding: 8px 10px; /* Slightly smaller padding */
+  border-radius: 8px; /* Softer rounded corners */
+  position: absolute;
+  z-index: 1;
+  bottom: 125%; /* Position above the text */
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  font-size: 1.5rem; /* Smaller font size */
+}
+
+/* Add an arrow pointing down */
+.tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%; /* Position below the tooltip */
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent; /* Arrow color */
+}
+
+/* Show Tooltip */
+.tooltip-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(-5px); /* Subtle movement */
+}
+
+
+/* Responsive Tooltip for Smaller Screens */
+@media (max-width: 768px) {
+  .tooltip {
+    width: 90%; /* Adjust width to fit within smaller screens */
+    font-size: 0.9rem; /* Reduce font size for readability */
+    line-height: 1.2; /* Adjust line spacing for compactness */
+    padding: 8px 10px; /* Slightly reduce padding */
+  }
+}
+
+@media (max-width: 480px) {
+  .tooltip {
+    font-size: 0.8rem; /* Further reduce font size for very small screens */
+    width: 85%; /* Adjust width further for narrow screens */
+    padding: 6px 8px; /* Minimized padding for space efficiency */
+  }
+}
+
