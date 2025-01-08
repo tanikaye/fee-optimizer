@@ -41,6 +41,7 @@ function App() {
   const [alertUnit, setAlertUnit] = useState("gwei");
   const [alertSet, setAlertSet] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState("");
+  const [transactionType, setTransactionType] = useState("auto"); // Default to 'Detect Automatically'
 
   // **Add the provider instance here**
   const provider = new ethers.JsonRpcProvider(
@@ -125,6 +126,7 @@ function App() {
         to: recipientAddress,
         value: ethers.parseEther(amount), // Amount in ETH
       });
+      console.log("gasEstimate: ", gasEstimate)
 
       const gasPriceGwei =
         feeType === "low"
