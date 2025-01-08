@@ -6,6 +6,7 @@ import { db } from "./firebaseConfig";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { messaging } from "./firebaseConfig"; // Import messaging
 import { getToken, onMessage } from "firebase/messaging";
+import { ethers } from "ethers";
 
 const requestNotificationPermission = async () => {
   try {
@@ -40,6 +41,12 @@ function App() {
   const [alertUnit, setAlertUnit] = useState("gwei");
   const [alertSet, setAlertSet] = useState(false);
 
+  // **Add the provider instance here**
+  const provider = new ethers.JsonRpcProvider(
+    "https://mainnet.infura.io/v3/f8b3f0c05853484283b8a45d6d2e6a5c" // Replace with your Infura URL
+  );
+
+
   // Fetch and update ETH price
   useEffect(() => {
     const updateEthPrice = async () => {
@@ -52,7 +59,7 @@ function App() {
     updateEthPrice();
 
     // Refresh ETH price periodically
-    const interval = setInterval(updateEthPrice, 15000); // Update every 15 seconds
+    const interval = setInterval(updateEthPrice, 30000); // Update every 30 seconds
     return () => clearInterval(interval); // Cleanup
   }, []);
 
@@ -105,36 +112,47 @@ function App() {
     return unsubscribe; // Cleanup the listener on unmount
   }, []);
 
-  const calculateFee = () => {
+  const calculateFee = async () => {
     if (!fees || !amount) {
       alert("Please enter a valid transaction amount.");
       return;
     }
 
-    const gasPriceGwei =
-      feeType === "low"
-        ? fees.SafeGasPrice
-        : feeType === "average"
-        ? fees.ProposeGasPrice
-        : fees.FastGasPrice;
+    try {
+      // Example: Replace 'recipientAddress' with the actual recipient address
+      const gasEstimate = await provider.estimateGas({
+        to: '0x9337393eef272fF39aD9D4e0bA11aA12C4ce8CE3',
+        value: ethers.parseEther(amount), // Amount in ETH
+      });
 
-    const gasPriceEth = gasPriceGwei / 1e9;
-    const estimatedGasLimit = 200000;
-    const estimatedGasFeeEth = gasPriceEth * estimatedGasLimit;
-    const estimatedGasFeeUsd = estimatedGasFeeEth * ethPrice;
+      const gasPriceGwei =
+        feeType === "low"
+          ? fees.SafeGasPrice
+          : feeType === "average"
+          ? fees.ProposeGasPrice
+          : fees.FastGasPrice;
 
-    console.log("Calculated Gas Fee:", {
-      eth: estimatedGasFeeEth,
-      gwei: gasPriceGwei,
-      usd: estimatedGasFeeUsd,
-    });
+      const gasPriceEth = gasPriceGwei / 1e9; // Convert Gwei to ETH
+      const estimatedGasFeeEth = gasPriceEth * BigInt(gasEstimate).toString(); // Dynamic gas estimate
+      const estimatedGasFeeUsd = estimatedGasFeeEth * ethPrice;
 
-    setCalculatedFee({
-      eth: estimatedGasFeeEth.toFixed(8),
-      gwei: (gasPriceGwei * estimatedGasLimit).toLocaleString(),
-      usd: estimatedGasFeeUsd.toFixed(2),
-    });
+      console.log("Calculated Gas Fee:", {
+        eth: estimatedGasFeeEth,
+        gwei: gasEstimate.toString(),
+        usd: estimatedGasFeeUsd,
+      });
+
+      setCalculatedFee({
+        eth: estimatedGasFeeEth.toFixed(8),
+        gwei: gasEstimate.toLocaleString(),
+        usd: estimatedGasFeeUsd.toFixed(2),
+      });
+    } catch (error) {
+      console.error("Error estimating gas:", error);
+      alert("Failed to estimate gas. Please check your input.");
+    }
   };
+
 
   const saveAlertToFirestore = async () => {
     if (!alertThreshold || !alertType) {
