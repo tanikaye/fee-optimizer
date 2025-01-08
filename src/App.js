@@ -47,7 +47,7 @@ function App() {
 
   // **Add the provider instance here**
   const provider = new ethers.JsonRpcProvider(
-    "https://mainnet.infura.io/v3/f8b3f0c05853484283b8a45d6d2e6a5c" // Replace with your Infura URL
+    `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_API_KEY}`
   );
 
 
