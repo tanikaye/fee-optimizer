@@ -41,7 +41,9 @@ function App() {
   const [alertUnit, setAlertUnit] = useState("gwei");
   const [alertSet, setAlertSet] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState("");
-  const [transactionType, setTransactionType] = useState("auto"); // Default to 'Detect Automatically'
+  const [transactionType, setTransactionType] = useState("send_eth"); // Default to ETH transfer
+  const [showRecipientInput, setShowRecipientInput] = useState(false); // For "I don't know" option
+
 
   // **Add the provider instance here**
   const provider = new ethers.JsonRpcProvider(
@@ -114,19 +116,54 @@ function App() {
     return unsubscribe; // Cleanup the listener on unmount
   }, []);
 
+
+
   const calculateFee = async () => {
-    if (!fees || !amount) {
-      alert("Please enter a valid transaction amount.");
+    if (
+      !fees ||
+      (
+        (transactionType === "transfer_erc20" || transactionType === "swap_tokens" || transactionType === "mint_nft") &&
+        !amount
+      )
+    ) {
+      alert("Please fill in all required fields.");
       return;
     }
 
     try {
-      // Example: Replace 'recipientAddress' with the actual recipient address
-      const gasEstimate = await provider.estimateGas({
-        to: recipientAddress,
-        value: ethers.parseEther(amount), // Amount in ETH
-      });
-      console.log("gasEstimate: ", gasEstimate)
+      let gasEstimate;
+
+      // Handle transaction types
+      if (transactionType === "send_eth") {
+        gasEstimate = 21000; // Simple ETH transfer
+      } else if (transactionType === "transfer_erc20") {
+        // Add logic for ERC-20 transfer
+        alert("ERC-20 transfer gas estimation is not yet available. Coming soon!");
+        return;
+      } else if (transactionType === "swap_tokens") {
+        alert("Token swap gas estimation is not yet available. Coming soon!");
+        return;
+      } else if (transactionType === "mint_nft") {
+        alert("NFT minting gas estimation is not yet available. Coming soon!");
+        return;
+      } else if (transactionType === "unknown") {
+        // Use recipient address to detect type
+        if (!recipientAddress) {
+          alert("Please enter a recipient address.");
+          return;
+        }
+        const code = await provider.getCode(recipientAddress);
+          if (code === "0x") {
+            // Wallet (EOA) detected
+            gasEstimate = 21000;
+          } else {
+            // Smart contract detected
+            alert(
+              "Recipient address is a smart contract. Smart contract fee estimation is not yet available. Coming soon!"
+            );
+            return;
+          }
+      }
 
       const gasPriceGwei =
         feeType === "low"
@@ -136,14 +173,8 @@ function App() {
           : fees.FastGasPrice;
 
       const gasPriceEth = gasPriceGwei / 1e9; // Convert Gwei to ETH
-      const estimatedGasFeeEth = gasPriceEth * BigInt(gasEstimate).toString(); // Dynamic gas estimate
+      const estimatedGasFeeEth = gasPriceEth * gasEstimate;
       const estimatedGasFeeUsd = estimatedGasFeeEth * ethPrice;
-
-      console.log("Calculated Gas Fee:", {
-        eth: estimatedGasFeeEth,
-        gwei: gasEstimate.toString(),
-        usd: estimatedGasFeeUsd,
-      });
 
       setCalculatedFee({
         eth: estimatedGasFeeEth.toFixed(8),
@@ -155,6 +186,7 @@ function App() {
       alert("Failed to estimate gas. Please check your input.");
     }
   };
+
 
 
   const saveAlertToFirestore = async () => {
@@ -261,28 +293,56 @@ function App() {
                 Click "Calculate Fee" to view the estimated transaction cost in ETH, Gwei, and USD.
               </div>
             </div>
-            <div className="input-group">
-              <input
-                type="text"
-                placeholder="Recipient Address"
-                value={recipientAddress}
-                onChange={(e) => setRecipientAddress(e.target.value)}
-                style={{ width: "300px", marginBottom: "10px" }}
-              />
-              <input
-                type="number"
-                placeholder="Transaction Amount (ETH)"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                style={{ width: "200px" }}
-              />
-              <select value={feeType} onChange={(e) => setFeeType(e.target.value)}>
-                <option value="low">Low</option>
-                <option value="average">Average</option>
-                <option value="high">High</option>
+
+
+            <div>
+              <h3>Select Transaction Type</h3>
+              <select
+                value={transactionType}
+                onChange={(e) => {
+                  setTransactionType(e.target.value);
+                  setShowRecipientInput(e.target.value === "unknown");
+                }}
+              >
+                <option value="send_eth">Send ETH</option>
+                <option value="transfer_erc20">Transfer ERC-20 Token</option>
+                <option value="swap_tokens">Swap Tokens on Uniswap</option>
+                <option value="mint_nft">Mint NFT</option>
+                <option value="unknown">I don’t know the transaction type</option>
               </select>
-              <button onClick={calculateFee}>Calculate Fee</button>
-              </div>
+
+              {/* Show recipient address input only if "I don’t know" is selected */}
+              {showRecipientInput && (
+                <input
+                  type="text"
+                  placeholder="Enter Recipient Address"
+                  value={recipientAddress}
+                  onChange={(e) => setRecipientAddress(e.target.value)}
+                  style={{ width: "300px", marginBottom: "10px" }}
+                />
+              )}
+
+              {/* Other inputs based on transaction type */}
+              {(transactionType === "transfer_erc20" || transactionType === "swap_tokens" || transactionType === "mint_nft") && (
+                <input
+                  type="number"
+                  placeholder="Transaction Amount (ETH)"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  style={{ width: "200px" }}
+                />
+              )}
+              {/* Gas fee level selection */}
+              <select value={feeType} onChange={(e) => setFeeType(e.target.value)}>
+                  <option value="low">Low</option>
+                  <option value="average">Average</option>
+                  <option value="high">High</option>
+                </select>
+
+                <button onClick={calculateFee}>Calculate Fee</button>
+
+            </div>
+
               {calculatedFee && (
                 <div>
                   <p>Estimated Gas Fee:</p>
