@@ -40,6 +40,7 @@ function App() {
   const [alertTriggered, setAlertTriggered] = useState(false);
   const [alertUnit, setAlertUnit] = useState("gwei");
   const [alertSet, setAlertSet] = useState(false);
+  const [recipientAddress, setRecipientAddress] = useState("");
 
   // **Add the provider instance here**
   const provider = new ethers.JsonRpcProvider(
@@ -121,7 +122,7 @@ function App() {
     try {
       // Example: Replace 'recipientAddress' with the actual recipient address
       const gasEstimate = await provider.estimateGas({
-        to: '0x9337393eef272fF39aD9D4e0bA11aA12C4ce8CE3',
+        to: recipientAddress,
         value: ethers.parseEther(amount), // Amount in ETH
       });
 
@@ -251,6 +252,13 @@ function App() {
             </p>
             <div>
               <h3>Calculate Gas Fee</h3>
+              <input
+                type="text"
+                placeholder="Recipient Address"
+                value={recipientAddress}
+                onChange={(e) => setRecipientAddress(e.target.value)}
+                style={{ width: "300px", marginBottom: "10px" }}
+              />
               <input
                 type="number"
                 placeholder="Transaction Amount (ETH)"
