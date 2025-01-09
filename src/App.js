@@ -289,8 +289,6 @@ function App() {
               <h3>Calculate Gas Fee</h3>
               <div className="tooltip">
                 This functionality allows you to estimate the gas fee required for an Ethereum transaction.
-                Enter the recipient's address, the transaction amount in ETH, and select the gas fee type (low, average, or high).
-                Click "Calculate Fee" to view the estimated transaction cost in ETH, Gwei, and USD.
               </div>
             </div>
 
