@@ -88,9 +88,10 @@ footer {
   color: white;
   text-align: center;
   padding: 10px 0;
-  position: relative; /* Ensure footer remains part of the flow */
+  position: absolute; /* Ensure footer remains part of the flow */
   width: 100%;
   bottom: 0;
+  flex-shrink: 0;
 }
 
 /* Input and Button Styles */
@@ -269,6 +270,13 @@ button:hover {
 }
 
 @media (max-height: 950px) {
+  html {
+    font-size: 70%; /* Halve the base font size */
+  }
+
+}
+
+@media (max-height: 800px) {
   html {
     font-size: 60%; /* Halve the base font size */
   }
