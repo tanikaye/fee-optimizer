@@ -88,7 +88,7 @@ footer {
   color: white;
   text-align: center;
   padding: 10px 0;
-  position: absolute; /* Ensure footer remains part of the flow */
+  position: relative; /* Ensure footer remains part of the flow */
   width: 100%;
   bottom: 0;
   flex-shrink: 0;
