@@ -253,5 +253,27 @@ button:hover {
   }
 }
 
+/* When screen height is less than 1100px */
+@media (max-height: 1100px) {
+  html {
+    font-size: 80%; /* Halve the base font size */
+  }
+
+  input,
+  button {
+    width: 150px; /* Reduce input and button width */
+    font-size: 0.5em; /* Halve input and button font size */
+    padding: 5px; /* Adjust padding */
+  }
+
+}
+
+@media (max-height: 950px) {
+  html {
+    font-size: 60%; /* Halve the base font size */
+  }
+
+}
+
 
 
