@@ -7,6 +7,15 @@ import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { messaging } from "./firebaseConfig"; // Import messaging
 import { getToken, onMessage } from "firebase/messaging";
 import { ethers } from "ethers";
+import { nftMinting } from './utils/transactionMappings/nftMinting';
+import { getFeeCalculationFunction } from './utils/nftFeeCalculations/feeIndex';
+import { fetchAndCalculate } from './utils/openSeaApi';
+import nftOptions from './utils/transactionMappings/nftOptions'; // Adjust the path based on your file structure
+import Sandbox from "./Sandbox"; // Adjust path as needed
+import { estimateERC20TransferGas, validateAndGetTokenInfo } from "./utils/erc20Utils";
+
+
+
 
 const requestNotificationPermission = async () => {
   try {
@@ -28,6 +37,25 @@ const requestNotificationPermission = async () => {
   }
 };
 
+const fetchAbi = async (contractAddress) => {
+  try {
+    const response = await fetch(
+      `https://api.etherscan.io/api?module=contract&action=getabi&address=${contractAddress}&apikey=${process.env.REACT_APP_ETHERSCAN_API_KEY}`
+    );
+    console.log("testing etherscan api key: ", response)
+    const data = await response.json();
+    if (data.status !== "1") {
+      throw new Error("Failed to fetch ABI");
+    }
+    return JSON.parse(data.result);
+  } catch (error) {
+    console.error("Error fetching ABI:", error);
+    alert("Failed to fetch ABI. Check the contract address.");
+    return null;
+  }
+};
+
+
 function App() {
   const [fees, setFees] = useState(null);
   const [amount, setAmount] = useState("");
@@ -43,6 +71,12 @@ function App() {
   const [recipientAddress, setRecipientAddress] = useState("");
   const [transactionType, setTransactionType] = useState("send_eth"); // Default to ETH transfer
   const [showRecipientInput, setShowRecipientInput] = useState(false); // For "I don't know" option
+  const [selectedNFT, setSelectedNFT] = useState("");
+  const [contractAddress, setContractAddress] = useState("");
+  const [tokenId, setTokenId] = useState("");
+  const [tokenAddress, setTokenAddress] = useState("");
+  const [tokenInfo, setTokenInfo] = useState(null);
+  const [tokenAmount, setTokenAmount] = useState("");
 
 
   // **Add the provider instance here**
@@ -57,7 +91,6 @@ function App() {
       const price = await fetchEthPrice(); // Fetch ETH price
       setEthPrice(price); // Set ETH price in state
       console.log("checking real ethereum price: ", price, ethPrice);
-
     };
 
     updateEthPrice();
@@ -74,6 +107,7 @@ function App() {
   useEffect(() => {
     const fetchFees = async () => {
       const data = await getGasFees();
+      // This is the price of a unit of gas (kind of like how a liter of gasoline is $3.50, for example)
       setFees(data);
 
       if (alertSet && activeAlertThreshold && alertType) {
@@ -121,10 +155,8 @@ function App() {
   const calculateFee = async () => {
     if (
       !fees ||
-      (
-        (transactionType === "transfer_erc20" || transactionType === "swap_tokens" || transactionType === "mint_nft") &&
-        !amount
-      )
+      (transactionType === "mint_nft" && (!selectedNFT || !amount)) ||
+      (transactionType === "transfer_erc20" && (!tokenAddress || !recipientAddress || !tokenAmount))
     ) {
       alert("Please fill in all required fields.");
       return;
@@ -137,32 +169,60 @@ function App() {
       if (transactionType === "send_eth") {
         gasEstimate = 21000; // Simple ETH transfer
       } else if (transactionType === "transfer_erc20") {
-        // Add logic for ERC-20 transfer
-        alert("ERC-20 transfer gas estimation is not yet available. Coming soon!");
-        return;
+        try {
+          gasEstimate = await estimateERC20TransferGas(
+            provider,
+            tokenAddress,
+            recipientAddress,
+            tokenAmount
+          );
+        } catch (error) {
+          console.error("Error estimating ERC-20 transfer gas:", error);
+          alert("Failed to estimate ERC-20 transfer gas. Please check your inputs.");
+          return;
+        }
       } else if (transactionType === "swap_tokens") {
         alert("Token swap gas estimation is not yet available. Coming soon!");
         return;
       } else if (transactionType === "mint_nft") {
-        alert("NFT minting gas estimation is not yet available. Coming soon!");
-        return;
+        const nftDetails = nftMinting[selectedNFT];
+        if (!nftDetails) {
+          alert("Invalid NFT selected.");
+          return;
+        }
+
+        // Fetch contract details
+        const { contractAddress, abi, functionName } = nftDetails;
+
+        const contract = new ethers.Contract(contractAddress, abi, provider);
+        console.log("contract: ", contract);
+
+        const calculateFeeFunction = getFeeCalculationFunction(selectedNFT);
+
+        if (!calculateFeeFunction) {
+          alert(`No calculateFeeFunction defined for ${selectedNFT}.`);
+          return;
+        }
+
+        // Dynamically calculate minting cost
+        const totalCost = await calculateFeeFunction(contract, amount);
+
+        // Prepare params for gas estimation
+        const params = [amount]; // Ensure this matches your contract's minting function
+        await estimateContractGasFee(contractAddress, abi, functionName, params, totalCost);
+        return; // Exit after mint logic
       } else if (transactionType === "unknown") {
-        // Use recipient address to detect type
         if (!recipientAddress) {
           alert("Please enter a recipient address.");
           return;
         }
         const code = await provider.getCode(recipientAddress);
-          if (code === "0x") {
-            // Wallet (EOA) detected
-            gasEstimate = 21000;
-          } else {
-            // Smart contract detected
-            alert(
-              "Recipient address is a smart contract. Smart contract fee estimation is not yet available. Coming soon!"
-            );
-            return;
-          }
+        if (code === "0x") {
+          gasEstimate = 21000; // Wallet (EOA) detected
+        } else {
+          alert("Smart contract fee estimation is not yet available. Coming soon!");
+          return;
+        }
       }
 
       const gasPriceGwei =
@@ -172,13 +232,13 @@ function App() {
           ? fees.ProposeGasPrice
           : fees.FastGasPrice;
 
-      const gasPriceEth = gasPriceGwei / 1e9; // Convert Gwei to ETH
-      const estimatedGasFeeEth = gasPriceEth * gasEstimate;
+      const gasPriceEth = Number(gasPriceGwei) / 1e9; // Convert Gwei to ETH
+      const estimatedGasFeeEth = gasPriceEth * Number(gasEstimate); // Convert gasEstimate to number
       const estimatedGasFeeUsd = estimatedGasFeeEth * ethPrice;
 
       setCalculatedFee({
         eth: estimatedGasFeeEth.toFixed(8),
-        gwei: gasEstimate.toLocaleString(),
+        gwei: Number(gasEstimate).toLocaleString(),
         usd: estimatedGasFeeUsd.toFixed(2),
       });
     } catch (error) {
@@ -186,6 +246,54 @@ function App() {
       alert("Failed to estimate gas. Please check your input.");
     }
   };
+
+  // const handleFetchAndCalculate = () => {
+  //   if (!contractAddress || !tokenId) {
+  //     alert("Please enter both Contract Address and Token ID.");
+  //     return;
+  //   }
+  //   fetchAndCalculate(contractAddress, tokenId);
+  // };
+
+
+
+
+  const estimateContractGasFee = async (contractAddress, abi, functionName, params) => {
+    console.log("contractAddress: ", contractAddress)
+    console.log("abi: ", abi)
+    console.log("functionName: ", functionName)
+    console.log("params: ", params)
+    try {
+      const contract = new ethers.Contract(contractAddress, abi, provider);
+      const data = contract.interface.encodeFunctionData(functionName, params);
+
+      const gasEstimate = await provider.estimateGas({
+        to: contractAddress,
+        data,
+      });
+
+      const gasPriceGwei =
+        feeType === "low"
+          ? fees.SafeGasPrice
+          : feeType === "average"
+          ? fees.ProposeGasPrice
+          : fees.FastGasPrice;
+
+      const gasPriceEth = Number(gasPriceGwei) / 1e9; // Convert Gwei to ETH
+      const estimatedGasFeeEth = gasPriceEth * Number(gasEstimate); // Convert gasEstimate to number
+      const estimatedGasFeeUsd = estimatedGasFeeEth * ethPrice;
+
+      setCalculatedFee({
+        eth: estimatedGasFeeEth.toFixed(8),
+        gwei: Number(gasEstimate).toLocaleString(),
+        usd: estimatedGasFeeUsd.toFixed(2),
+      });
+    } catch (error) {
+      console.error("Error estimating gas for smart contract interaction:", error);
+      alert("Failed to estimate smart contract gas fee. Please check your input.");
+    }
+  };
+
 
 
 
@@ -239,12 +347,28 @@ function App() {
     }
   };
 
-
+  // Add token validation function
+  const validateToken = async (address) => {
+    try {
+      const info = await validateAndGetTokenInfo(provider, address);
+      if (info.isValid) {
+        setTokenInfo(info);
+      } else {
+        setTokenInfo(null);
+        alert(info.error);
+      }
+    } catch (error) {
+      console.error("Error validating token:", error);
+      setTokenInfo(null);
+      alert("Failed to validate token address");
+    }
+  };
 
 
 
 
   return (
+    <>
     <div>
       <header>
         <h1>Nivio</h1>
@@ -300,16 +424,40 @@ function App() {
                 onChange={(e) => {
                   setTransactionType(e.target.value);
                   setShowRecipientInput(e.target.value === "unknown");
+                  // Reset token info when changing transaction type
+                  if (e.target.value !== "transfer_erc20") {
+                    setTokenInfo(null);
+                    setTokenAddress("");
+                    setTokenAmount("");
+                  }
                 }}
               >
                 <option value="send_eth">Send ETH</option>
                 <option value="transfer_erc20">Transfer ERC-20 Token</option>
                 <option value="swap_tokens">Swap Tokens on Uniswap</option>
                 <option value="mint_nft">Mint NFT</option>
-                <option value="unknown">I don’t know the transaction type</option>
+                <option value="unknown">I don't know the transaction type</option>
               </select>
 
-              {/* Show recipient address input only if "I don’t know" is selected */}
+              {/* Conditionally render the NFT select */}
+                {transactionType === "mint_nft" && (
+                  <div>
+                    <h3>Select NFT</h3>
+                    <select
+                      value={selectedNFT}
+                      onChange={(e) => setSelectedNFT(e.target.value)}
+                    >
+                      <option value="">Select an NFT</option>
+                      {Object.keys(nftMinting).map((key) => (
+                        <option key={key} value={key}>
+                          {nftMinting[key].name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+              {/* Show recipient address input only if "I don't know" is selected */}
               {showRecipientInput && (
                 <input
                   type="text"
@@ -321,15 +469,59 @@ function App() {
               )}
 
               {/* Other inputs based on transaction type */}
-              {(transactionType === "transfer_erc20" || transactionType === "swap_tokens" || transactionType === "mint_nft") && (
+              {transactionType === "mint_nft" && (
+              <>
+                {/* Input for Contract Address */}
+                {/* <input
+                  type="text"
+                  placeholder="Enter Contract Address"
+                  value={recipientAddress} // Or `contractAddress`
+                  onChange={(e) => setRecipientAddress(e.target.value)}
+                  style={{ width: "300px", marginBottom: "10px" }}
+                /> */}
+
+                {/* Input for Parameters (e.g., amount) */}
                 <input
                   type="number"
-                  placeholder="Transaction Amount (ETH)"
+                  placeholder="Enter Number of NFTs to Mint"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  style={{ width: "200px" }}
+                  style={{ width: "300px", marginBottom: "10px" }}
                 />
+              </>
+            )}
+
+              {/* Add ERC-20 specific inputs */}
+              {transactionType === "transfer_erc20" && (
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Enter ERC-20 Token Address"
+                    value={tokenAddress}
+                    onChange={(e) => setTokenAddress(e.target.value)}
+                    onBlur={() => validateToken(tokenAddress)}
+                    style={{ width: "300px", marginBottom: "10px" }}
+                  />
+                  {tokenInfo && (
+                    <p>Token Symbol: {tokenInfo.symbol}</p>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="Enter Recipient Address"
+                    value={recipientAddress}
+                    onChange={(e) => setRecipientAddress(e.target.value)}
+                    style={{ width: "300px", marginBottom: "10px" }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Enter Token Amount"
+                    value={tokenAmount}
+                    onChange={(e) => setTokenAmount(e.target.value)}
+                    style={{ width: "300px", marginBottom: "10px" }}
+                  />
+                </div>
               )}
+
               {/* Gas fee level selection */}
               <select value={feeType} onChange={(e) => setFeeType(e.target.value)}>
                   <option value="low">Low</option>
@@ -379,6 +571,8 @@ function App() {
         <p>© 2024 Nivio. All Rights Reserved.</p>
       </footer>
     </div>
+    <Sandbox />
+    </>
   );
 }
 
