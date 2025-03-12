@@ -389,12 +389,14 @@ function App() {
     <>
       <header>
         <nav>
-          <h1>Nivio</h1>
+          <div className="header-left">
+            <h1>Nivio</h1>
+            <div className="header-description">
+              Real-time Ethereum gas fee tracker and calculator
+            </div>
+          </div>
           <a href="#" className="about-link">About</a>
         </nav>
-        <div className="header-description">
-          Real-time Ethereum gas fee tracker and calculator
-        </div>
       </header>
 
       <main>
@@ -563,22 +565,59 @@ function App() {
           <button onClick={calculateFee}>Calculate Fee</button>
 
           {calculatedFee && (
-            <div className="fee-item">
-              <div className="calculated-fee">
-                <p className="gas-calculation">
-                  {Number(calculatedFee.gasUnits).toLocaleString()} gas units × {Number(calculatedFee.gasPrice).toFixed(2)} Gwei
-                </p>
+            <div className="swap-route-details">
+              {transactionType === "swap_tokens" && (
+                <>
+                  <h4 className="route-path">Swap Route</h4>
+                  <p className="route-description">{calculatedFee.path}</p>
+                  <p className="route-description">{calculatedFee.route}</p>
+                </>
+              )}
+
+              <div className="gas-units">
+                <span>Base Gas Units</span>
+                <span>{Number(calculatedFee.gasUnits).toLocaleString()}</span>
+              </div>
+
+              {calculatedFee.withApproval && (
+                <div className="gas-units">
+                  <span>Token Approval</span>
+                  <span>+{Number(calculatedFee.withApproval - calculatedFee.gasUnits).toLocaleString()}</span>
+                </div>
+              )}
+
+              <div className="gas-calculation">
+                {Number(calculatedFee.gasUnits).toLocaleString()} × {Number(calculatedFee.gasPrice).toFixed(2)} Gwei
+              </div>
+
+              <div className="fee-breakdown">
+                <div className="fee-item">
+                  <span className="fee-label">Gas Fee</span>
+                  <div>
+                    <div className="fee-amount">{(Number(calculatedFee.eth) * 1e9).toFixed(2)} Gwei</div>
+                    <div className="eth-amount">({Number(calculatedFee.eth).toFixed(6)} ETH)</div>
+                  </div>
+                </div>
+
                 {calculatedFee.withApproval && (
-                  <div className="approval-fee">
-                    + {(Number(calculatedFee.withApproval * calculatedFee.gasPrice / 1e9 - calculatedFee.eth) * 1e9).toFixed(2)} Gwei for approval
-                    <div className="eth-amount">({Number(calculatedFee.withApproval * calculatedFee.gasPrice / 1e9 - calculatedFee.eth).toFixed(6)} ETH)</div>
+                  <div className="fee-item">
+                    <span className="fee-label">Approval Fee</span>
+                    <div>
+                      <div className="fee-amount">
+                        {(Number(calculatedFee.withApproval * calculatedFee.gasPrice / 1e9 - calculatedFee.eth) * 1e9).toFixed(2)} Gwei
+                      </div>
+                      <div className="eth-amount">
+                        ({Number(calculatedFee.withApproval * calculatedFee.gasPrice / 1e9 - calculatedFee.eth).toFixed(6)} ETH)
+                      </div>
+                    </div>
                   </div>
                 )}
-                <div className="total-fee">
-                  {(Number(calculatedFee.eth) * 1e9).toFixed(2)} Gwei
-                  <div className="eth-amount">({Number(calculatedFee.eth).toFixed(6)} ETH)</div>
-                </div>
-                <p className="usd-amount">${Number(calculatedFee.usd).toFixed(2)}</p>
+              </div>
+
+              <div className="total-fee">
+                <span className="total-label">Total Fee</span>
+                <span className="total-amount">${Number(calculatedFee.usd).toFixed(2)}</span>
+                <span className="total-eth">{Number(calculatedFee.eth).toFixed(6)} ETH</span>
               </div>
             </div>
           )}
