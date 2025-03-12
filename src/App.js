@@ -457,7 +457,7 @@ function App() {
       </div>
 
       <main>
-        <h2>Gas Fee Calculator</h2>
+        <h2><span>Gas Fee Calculator</span></h2>
 
         {!notificationsEnabled && (
           <button
@@ -471,23 +471,47 @@ function App() {
           </button>
         )}
 
-        {/* Gas Fees Display Card */}
+        {/* Gas Fees Display Card with Price Alerts */}
         {fees ? (
           <div className="card">
-            <h3>Live Gas Prices</h3>
-            <div className="gas-info">
-              <p>
-                <span>Low Priority</span>
-                <span>{Number(fees.SafeGasPrice).toFixed(2)} Gwei</span>
-              </p>
-              <p>
-                <span>Medium Priority</span>
-                <span>{Number(fees.ProposeGasPrice).toFixed(2)} Gwei</span>
-              </p>
-              <p>
-                <span>High Priority</span>
-                <span>{Number(fees.FastGasPrice).toFixed(2)} Gwei</span>
-              </p>
+            <div className="gas-prices-section">
+              <h3>Live Gas Prices</h3>
+              <div className="gas-info">
+                <p>
+                  <span>Low Priority</span>
+                  <span>{Number(fees.SafeGasPrice).toFixed(2)} Gwei</span>
+                </p>
+                <p>
+                  <span>Medium Priority</span>
+                  <span>{Number(fees.ProposeGasPrice).toFixed(2)} Gwei</span>
+                </p>
+                <p>
+                  <span>High Priority</span>
+                  <span>{Number(fees.FastGasPrice).toFixed(2)} Gwei</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="price-alerts-section">
+              <h3>Price Alerts</h3>
+              <div className="alert-section">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="Enter target price in Gwei"
+                  value={alertThreshold}
+                  onChange={(e) => setAlertThreshold(e.target.value)}
+                />
+                <select value={alertType} onChange={(e) => setAlertType(e.target.value)}>
+                  <option value="low">Low Priority</option>
+                  <option value="average">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                </select>
+                <button onClick={saveAlertToFirestore}>
+                  {alertSet ? "Update Alert" : "Create Alert"}
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -690,29 +714,6 @@ function App() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Alert Settings Card */}
-        <div className="card">
-          <h3>Price Alerts</h3>
-          <div className="alert-section">
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              placeholder="Enter target price in Gwei"
-              value={alertThreshold}
-              onChange={(e) => setAlertThreshold(e.target.value)}
-            />
-            <select value={alertType} onChange={(e) => setAlertType(e.target.value)}>
-              <option value="low">Low Priority</option>
-              <option value="average">Medium Priority</option>
-              <option value="high">High Priority</option>
-            </select>
-            <button onClick={saveAlertToFirestore}>
-              {alertSet ? "Update Alert" : "Create Alert"}
-            </button>
-          </div>
         </div>
       </main>
     </>
