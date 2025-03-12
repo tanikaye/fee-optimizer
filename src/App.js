@@ -78,6 +78,7 @@ function App() {
   const [toToken, setToToken] = useState(COMMON_TOKENS.USDC);
   const [swapAmount, setSwapAmount] = useState('');
   const [swapDetails, setSwapDetails] = useState(null);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
 
   // **Add the provider instance here**
@@ -403,9 +404,57 @@ function App() {
               Real-time Ethereum gas fee tracker and calculator
             </div>
           </div>
-          <a href="#" className="about-link">About</a>
+          <a href="#" className="about-link" onClick={(e) => {
+            e.preventDefault();
+            setShowAboutModal(true);
+          }}>About</a>
         </nav>
       </header>
+
+      {/* About Modal */}
+      <div className={`modal-backdrop ${showAboutModal ? 'active' : ''}`} onClick={() => setShowAboutModal(false)}>
+        <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <button className="modal-close" onClick={() => setShowAboutModal(false)}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <div className="modal-header">
+            <h2 className="modal-title">About Nivio</h2>
+          </div>
+          <div className="modal-body">
+            <p>
+              Nivio is your advanced Ethereum gas fee optimization tool, designed to help you save money and make informed decisions about your blockchain transactions.
+            </p>
+
+            <div className="feature-list">
+              <div className="feature-item">
+                <h4>Real-Time Gas Tracking</h4>
+                <p>Monitor Ethereum gas fees in real-time with automatic updates every 7 seconds.</p>
+              </div>
+
+              <div className="feature-item">
+                <h4>Smart Fee Calculator</h4>
+                <p>Calculate precise transaction fees for different types of operations including ETH transfers, token swaps, and NFT minting.</p>
+              </div>
+
+              <div className="feature-item">
+                <h4>Price Alerts</h4>
+                <p>Set custom alerts to notify you when gas fees drop below your target price.</p>
+              </div>
+
+              <div className="feature-item">
+                <h4>Multi-Transaction Support</h4>
+                <p>Support for various transaction types including ETH transfers, ERC-20 tokens, NFTs, and smart contract interactions.</p>
+              </div>
+            </div>
+
+            <p>
+              Built with modern web technologies and real-time data feeds from the Ethereum network, Nivio helps you optimize your transaction timing and costs.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <main>
         <h2>Gas Fee Calculator</h2>
