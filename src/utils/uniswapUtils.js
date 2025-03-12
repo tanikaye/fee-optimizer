@@ -22,6 +22,11 @@ export const COMMON_TOKENS = {
     symbol: 'DAI',
     decimals: 18
   },
+  WBTC: {
+    address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
+    symbol: 'WBTC',
+    decimals: 8
+  },
   LINK: {
     address: '0x514910771AF9Ca656af840dff83E8264EcF986CA',
     symbol: 'LINK',
@@ -40,6 +45,51 @@ export const COMMON_TOKENS = {
   MATIC: {
     address: '0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0',
     symbol: 'MATIC',
+    decimals: 18
+  },
+  CRV: {
+    address: '0xD533a949740bb3306d119CC777fa900bA034cd52',
+    symbol: 'CRV',
+    decimals: 18
+  },
+  SNX: {
+    address: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
+    symbol: 'SNX',
+    decimals: 18
+  },
+  COMP: {
+    address: '0xc00e94Cb662C3520282E6f5717214004A7f26888',
+    symbol: 'COMP',
+    decimals: 18
+  },
+  MKR: {
+    address: '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2',
+    symbol: 'MKR',
+    decimals: 18
+  },
+  SUSHI: {
+    address: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2',
+    symbol: 'SUSHI',
+    decimals: 18
+  },
+  YFI: {
+    address: '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e',
+    symbol: 'YFI',
+    decimals: 18
+  },
+  FTM: {
+    address: '0x4E15361FD6b4BB609Fa63C81A2be19d873717870',
+    symbol: 'FTM',
+    decimals: 18
+  },
+  APE: {
+    address: '0x4d224452801ACEd8B2F0aebE155379bb5D594381',
+    symbol: 'APE',
+    decimals: 18
+  },
+  LDO: {
+    address: '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32',
+    symbol: 'LDO',
     decimals: 18
   }
 };
