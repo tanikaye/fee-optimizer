@@ -565,17 +565,19 @@ function App() {
           {calculatedFee && (
             <div className="fee-item">
               <div className="calculated-fee">
-                <div className="fee-amount">
-                  {Number(calculatedFee.eth).toFixed(6)} ETH
-                  {calculatedFee.withApproval && (
-                    <div className="approval-fee">
-                      + {Number(calculatedFee.withApproval * calculatedFee.gasPrice / 1e9 - calculatedFee.eth).toFixed(6)} ETH for approval
-                    </div>
-                  )}
-                </div>
-                <p className="gas-details">
+                <p className="gas-calculation">
                   {Number(calculatedFee.gasUnits).toLocaleString()} gas units × {Number(calculatedFee.gasPrice).toFixed(2)} Gwei
                 </p>
+                {calculatedFee.withApproval && (
+                  <div className="approval-fee">
+                    + {(Number(calculatedFee.withApproval * calculatedFee.gasPrice / 1e9 - calculatedFee.eth) * 1e9).toFixed(2)} Gwei for approval
+                    <div className="eth-amount">({Number(calculatedFee.withApproval * calculatedFee.gasPrice / 1e9 - calculatedFee.eth).toFixed(6)} ETH)</div>
+                  </div>
+                )}
+                <div className="total-fee">
+                  {(Number(calculatedFee.eth) * 1e9).toFixed(2)} Gwei
+                  <div className="eth-amount">({Number(calculatedFee.eth).toFixed(6)} ETH)</div>
+                </div>
                 <p className="usd-amount">${Number(calculatedFee.usd).toFixed(2)}</p>
               </div>
             </div>
