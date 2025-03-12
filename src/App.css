@@ -148,7 +148,13 @@ h2 {
   pointer-events: none;
 }
 
-.card:first-of-type h3 {
+.gas-prices-section {
+  position: relative;
+  margin-bottom: 28px;
+}
+
+.gas-prices-section h3,
+.price-alerts-section h3 {
   color: white;
   font-size: 1.25rem;
   margin-bottom: 28px;
@@ -194,6 +200,64 @@ h2 {
   transform: translateX(100%);
 }
 
+.price-alerts-section {
+  position: relative;
+  padding-top: 28px;
+  color: white;
+}
+
+.price-alerts-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -28px;
+  right: -28px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.price-alerts-section input,
+.price-alerts-section select {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  backdrop-filter: blur(12px);
+}
+
+.price-alerts-section input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.price-alerts-section input:hover,
+.price-alerts-section select:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.price-alerts-section input:focus,
+.price-alerts-section select:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.price-alerts-section select option {
+  background: #1D4ED8;
+  color: white;
+}
+
+.price-alerts-section button {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+}
+
+.price-alerts-section button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 /* Calculator Card */
 .card:nth-of-type(2) {
   grid-row: 2 / 4;
@@ -223,13 +287,6 @@ h2 {
 
 .card:nth-of-type(2)::-webkit-scrollbar-thumb:hover {
   background: rgba(59, 130, 246, 0.3);
-}
-
-/* Price Alerts Card */
-.card:nth-of-type(3) {
-  grid-row: 3;
-  grid-column: 1;
-  height: auto;
 }
 
 /* Notifications Card */
@@ -820,6 +877,11 @@ h3 {
   margin: 0;
   font-size: 0.9375rem;
   line-height: 1.5;
+}
+
+/* Remove the old Price Alerts card styles */
+.card:nth-of-type(3) {
+  display: none;
 }
 
 
